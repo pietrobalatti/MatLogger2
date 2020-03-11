@@ -60,6 +60,9 @@ struct MatAppender::Impl
     // flag specifying if the flusher thread should exit
     std::atomic<bool> _flush_thread_run;
     
+    // flag specifying if the verbose mode is active
+    std::atomic<bool> _verbose_mode;
+    
     Impl();
     
 };
@@ -72,7 +75,8 @@ MatAppender::Ptr MatAppender::MakeInstance()
 MatAppender::Impl::Impl():
     _available_bytes(0),
     _flush_thread_wake_up(false),
-    _flush_thread_run(false)
+    _flush_thread_run(false),
+    _verbose_mode(false)
 {
 
 }
@@ -251,9 +255,10 @@ void MatAppender::Impl::flush_thread_main()
             total_bytes += bytes;
         });
         
-        printf("Worked for %.2f sec (%.1f MB flushed)..", 
-               work_time, bytes*1e-6);
-        printf("..average load is %.2f \n", 1.0/(1.0+sleep_time_total/work_time_total));
+        if(_verbose_mode){
+            printf("Worked for %.2f sec (%.1f MB flushed)..", work_time, bytes*1e-6);
+            printf("..average load is %.2f \n", 1.0/(1.0+sleep_time_total/work_time_total));
+        }
         
         std::unique_lock<MutexType> lock(_cond_mutex);
         double sleep_time = measure_sec([this, &lock](){
